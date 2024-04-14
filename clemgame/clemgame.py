@@ -499,7 +499,7 @@ class DialogueGameMaster(GameMaster):
     def add_assistant_message(self, player: Player, utterance: str):
         self.add_message(player, utterance, role="assistant")
 
-    def __validate_parse_and_add_player_response(self, player: Player, utterance: str):
+    def _validate_parse_and_add_player_response(self, player: Player, utterance: str):
         # todo: it seems we should change the order here: Parse should come first, and then validate.
         # While parse might throw a parsing (format error) validate would check solely for satisfied game rules.
         # Note: this would allow to cut off too long responses (during parse) and to only validate on the cut off piece.

@@ -22,3 +22,6 @@ mistralai==0.0.12
 python-engineio==4.4.0
 python-socketio==5.7.2
 websocket-client
+# multi-agent env
+pettingzoo==1.24.3
+pygame==2.5.2
