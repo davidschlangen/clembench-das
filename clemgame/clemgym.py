@@ -150,24 +150,23 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
 
             for player_descriptor in self.agent_iter():  # ok this only points to the current agent
                 player = self.get_player(player_descriptor)
-                termination = self.prompt(player)
+                observation, reward, termination, truncation, info = self.last()
                 if termination:
                     break  # potentially stop in between player turns
+                action = self.prompt(player, observation)
+                self.step(action)
 
-                while self._should_reprompt(player):
+                while self._should_reprompt(player): # player has additional actions
                     self._on_before_reprompt(player)
-                    termination = self.prompt(player, is_reprompt=True)
-                if termination:
-                    break  # potentially stop in between player turns
+                    action = self.prompt(player, observation, is_reprompt=True)
+                    self.step(action)
 
                 self._agent_selector.next()  # here we step to the next agent (only AFTER possible reprompting!)
             self._on_after_turn(self.current_turn)
             self.current_turn += 1
         self._on_after_game()
 
-    def prompt(self, player: Player, is_reprompt=False):
-        history, reward, termination, truncation, info = self.last()
-
+    def prompt(self, player: Player, history: List[Dict], is_reprompt=False) -> str:
         last_message = history[-1]["content"]
         action_type = 'send message' if not is_reprompt else 'send message (reprompt)'
         action = {'type': action_type, 'content': last_message}
@@ -179,5 +178,4 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
         action = {'type': 'get message', 'content': response_message}
         self.log_event(from_=player.descriptor, to="GM", action=action, call=(_prompt, _response))
 
-        self.step(response_message)
-        return termination
+        return response_message
