@@ -89,6 +89,7 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
         self.players_by_names: Dict[str, Player] = collections.OrderedDict()
         self.messages_by_names: Dict[str, List] = dict()
         self.current_turn: int = 0
+        self.is_reprompt = False
         self._agent_selector = None
 
     def get_player(self, player_descriptor: str) -> Player:
@@ -130,6 +131,13 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
         self._validate_parse_and_add_player_response(player, action)
         self.terminations = dict.fromkeys(self.terminations, self._does_game_proceed())  # applies to all players
 
+        if self._should_reprompt(player):  # player has additional actions
+            self._on_before_reprompt(player)
+            self.is_reprompt = True
+        else:
+            self.is_reprompt = False
+            self._agent_selector.next()  # here we step to the next agent (only AFTER possible reprompting!)
+
     def observe(self, agent: AgentID) -> ObsType | None:
         # GM -> Player
         history = self.messages_by_names[agent]
@@ -156,19 +164,13 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
                 action = self.prompt(player, observation)
                 self.step(action)
 
-                while self._should_reprompt(player): # player has additional actions
-                    self._on_before_reprompt(player)
-                    action = self.prompt(player, observation, is_reprompt=True)
-                    self.step(action)
-
-                self._agent_selector.next()  # here we step to the next agent (only AFTER possible reprompting!)
             self._on_after_turn(self.current_turn)
             self.current_turn += 1
         self._on_after_game()
 
-    def prompt(self, player: Player, history: List[Dict], is_reprompt=False) -> str:
+    def prompt(self, player: Player, history: List[Dict]) -> str:
         last_message = history[-1]["content"]
-        action_type = 'send message' if not is_reprompt else 'send message (reprompt)'
+        action_type = 'send message' if not self.is_reprompt else 'send message (reprompt)'
         action = {'type': action_type, 'content': last_message}
         self.log_event(from_='GM', to=player.descriptor, action=action)
 
