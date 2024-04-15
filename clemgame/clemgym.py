@@ -150,24 +150,24 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
 
     def play(self) -> None:
         self._on_before_game()
-        termination = False
-        while not termination:
-            self.log_next_turn()  # not sure if we want to do this always here (or add to _on_before_turn)
-            self._on_before_turn(self.current_turn)
-            self.logger.info(f"{self.name}: %s turn: %d", self.name, self.current_turn)
+        for player_name in self.agent_iter():  # infinite loop
+            if self._agent_selector.is_first():
+                self.log_next_turn()  # not sure if we want to do this always here (or add to _on_before_turn)
+                self._on_before_turn(self.current_turn)
+                self.logger.info(f"{self.name}: %s turn: %d", self.name, self.current_turn)
 
-            for player_name in self.agent_iter():
-                observation, _, _, _, info = self.last()
-                action = self.prompt(player_name, observation)
-                self.step(action)
+            observation, _, _, _, info = self.last()
+            action = self.prompt(player_name, observation)
+            self.step(action)
 
-                # check for game end after player turn
-                _, reward, termination, truncation, info = self.last(observe=False)
-                if termination:
-                    break
+            if self._agent_selector.is_last():
+                self._on_after_turn(self.current_turn)
+                self.current_turn += 1
 
-            self._on_after_turn(self.current_turn)
-            self.current_turn += 1
+            # check for game end after each player's turn
+            _, reward, termination, truncation, info = self.last(observe=False)
+            if termination or truncation:  # terminate = rule violation; truncation = max steps reached
+                break
         self._on_after_game()
 
     def prompt(self, player_name: str, history: List[Dict]) -> str:
