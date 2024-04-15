@@ -128,6 +128,7 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
         # GM -> GM
         player = self.players_by_names[self.agent_selection]
         self._validate_parse_and_add_player_response(player, action)
+        self.terminations = dict.fromkeys(self.terminations, self._does_game_proceed())  # applies to all players
 
     def observe(self, agent: AgentID) -> ObsType | None:
         # GM -> Player
@@ -141,24 +142,23 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
 
     def play(self) -> None:
         self._on_before_game()
-        inner_break = False
         termination = False
-        while not inner_break and not termination:
+        while not termination:
             self.log_next_turn()  # not sure if we want to do this always here (or add to _on_before_turn)
             self._on_before_turn(self.current_turn)
             self.logger.info(f"{self.name}: %s turn: %d", self.name, self.current_turn)
 
-            # todo: infinit loop?!
             for player_descriptor in self.agent_iter():  # ok this only points to the current agent
                 player = self.get_player(player_descriptor)
+                termination = self.prompt(player)
                 if termination:
-                    inner_break = True  # break outer loop without calling _does_game_proceed again
                     break  # potentially stop in between player turns
 
-                self.prompt(player)
                 while self._should_reprompt(player):
                     self._on_before_reprompt(player)
-                    self.prompt(player, is_reprompt=True)
+                    termination = self.prompt(player, is_reprompt=True)
+                if termination:
+                    break  # potentially stop in between player turns
 
                 self._agent_selector.next()  # here we step to the next agent (only AFTER possible reprompting!)
             self._on_after_turn(self.current_turn)
@@ -180,3 +180,4 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
         self.log_event(from_=player.descriptor, to="GM", action=action, call=(_prompt, _response))
 
         self.step(response_message)
+        return termination
