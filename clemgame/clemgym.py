@@ -129,7 +129,7 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
         # GM -> GM
         player = self.players_by_names[self.agent_selection]
         self._validate_parse_and_add_player_response(player, action)
-        self.terminations = dict.fromkeys(self.terminations, self._does_game_proceed())  # applies to all players
+        self.terminations = dict.fromkeys(self.terminations, not self._does_game_proceed())  # applies to all players
 
         if self._should_reprompt(player):  # player has additional actions
             self._on_before_reprompt(player)
