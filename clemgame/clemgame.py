@@ -457,7 +457,7 @@ class DialogueGameMaster(GameMaster):
         self.log_event(from_=player.descriptor, to="GM", action=action, call=(_prompt, _response))
 
         # GM -> GM
-        self.__validate_parse_and_add_player_response(player, response_message)
+        self._validate_parse_and_add_player_response(player, response_message)
 
     def _should_reprompt(self, player: Player):
         return False
