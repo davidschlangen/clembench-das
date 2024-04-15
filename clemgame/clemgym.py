@@ -136,7 +136,7 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
             self.is_reprompt = True
         else:
             self.is_reprompt = False
-            self._agent_selector.next()  # here we step to the next agent (only AFTER possible reprompting!)
+            self.agent_selection = self._agent_selector.next()
 
     def observe(self, agent: AgentID) -> ObsType | None:
         # GM -> Player
@@ -156,12 +156,15 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
             self._on_before_turn(self.current_turn)
             self.logger.info(f"{self.name}: %s turn: %d", self.name, self.current_turn)
 
-            for player_name in self.agent_iter():  # ok this only points to the current agent
-                observation, reward, termination, truncation, info = self.last()
-                if termination:
-                    break  # potentially stop in between player turns
+            for player_name in self.agent_iter():
+                observation, _, _, _, info = self.last()
                 action = self.prompt(player_name, observation)
                 self.step(action)
+
+                # check for game end after player turn
+                _, reward, termination, truncation, info = self.last(observe=False)
+                if termination:
+                    break
 
             self._on_after_turn(self.current_turn)
             self.current_turn += 1
