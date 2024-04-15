@@ -156,28 +156,29 @@ class DialogueGymMaster(DialogueGameMaster, AECEnv):
             self._on_before_turn(self.current_turn)
             self.logger.info(f"{self.name}: %s turn: %d", self.name, self.current_turn)
 
-            for player_descriptor in self.agent_iter():  # ok this only points to the current agent
-                player = self.get_player(player_descriptor)
+            for player_name in self.agent_iter():  # ok this only points to the current agent
                 observation, reward, termination, truncation, info = self.last()
                 if termination:
                     break  # potentially stop in between player turns
-                action = self.prompt(player, observation)
+                action = self.prompt(player_name, observation)
                 self.step(action)
 
             self._on_after_turn(self.current_turn)
             self.current_turn += 1
         self._on_after_game()
 
-    def prompt(self, player: Player, history: List[Dict]) -> str:
+    def prompt(self, player_name: str, history: List[Dict]) -> str:
+
         last_message = history[-1]["content"]
         action_type = 'send message' if not self.is_reprompt else 'send message (reprompt)'
         action = {'type': action_type, 'content': last_message}
-        self.log_event(from_='GM', to=player.descriptor, action=action)
+        self.log_event(from_='GM', to=player_name, action=action)
 
+        player = self.get_player(player_name)
         _prompt, _response, response_message = player(history, self.current_turn)
 
         # Player -> GM
         action = {'type': 'get message', 'content': response_message}
-        self.log_event(from_=player.descriptor, to="GM", action=action, call=(_prompt, _response))
+        self.log_event(from_=player_name, to="GM", action=action, call=(_prompt, _response))
 
         return response_message
