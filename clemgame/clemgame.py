@@ -169,6 +169,18 @@ class GameResourceLocator(abc.ABC):
                                                 sub_dir=sub_dir, root_dir=root_dir)
         self.logger.info("Results file stored to %s", fp)
 
+    def store_resource_file(self, resource_path: str, dialogue_pair: str, sub_dir: str = None, root_dir: str = None):
+        """
+        Store a resource file in your game results' directory. The top-level directory is 'results'.
+
+        :param sub_dir: automatically created when given; otherwise an error will be thrown.
+        :param resource_path: to copy
+        :param root_dir: an alternative results directory structure given as a relative or absolute path
+        """
+        fp = file_utils.store_game_resource_file(resource_path, dialogue_pair, self.name,
+                                                 sub_dir=sub_dir, root_dir=root_dir)
+        self.logger.info("Resource file stored to %s", fp)
+
     def results_path_for(self, results_dir: str, dialogue_pair: str):
         return file_utils.game_results_dir_for(results_dir, dialogue_pair, self.name)
 
@@ -184,6 +196,7 @@ class GameRecorder(GameResourceLocator):
         """ Stores players and turn during the runs """
         self.interactions = {
             "players": {},
+            "resources": [],
             "turns": []
         }
         """ Stores calls to the API """
@@ -202,6 +215,10 @@ class GameRecorder(GameResourceLocator):
     def log_players(self, players_dic: Dict):
         self.interactions["players"] = players_dic
         self.logger.info(f"{self.name}: Logged players metadata.")
+
+    def log_resource(self, resource_path: str):
+        self.interactions["resources"].append(resource_path)
+        self.logger.info(f"{self.name}: Logged resource path {resource_path}.")
 
     def log_event(self, from_: str, to: str, action: Dict, call: Tuple[Any, Any] = None):
         """
@@ -256,6 +273,14 @@ class GameRecorder(GameResourceLocator):
             self.logger.warning(f"Interaction logs are missing!")
         if not self.requests:
             self.logger.warning(f"No calls logged!")
+        """ todo: not sure yet if we go this way (although I think this is the cleanest approach)
+        if self.interactions["resources"]: # copy resources e.g. multi-modal inputs to records folder
+            for resource_path in self.interactions["resources"]:
+                self.store_resource_file(resource_path,
+                                         dialogue_pair_desc,
+                                         sub_dir=game_record_dir,
+                                         root_dir=results_root)
+        """
         self.store_results_file(self.interactions, "interactions.json",
                                 dialogue_pair_desc,
                                 sub_dir=game_record_dir,

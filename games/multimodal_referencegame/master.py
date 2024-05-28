@@ -32,6 +32,11 @@ class MultimodalReferenceGameMaster(GameMaster):
             "Player_2": self.player_models[1].get_name()}
         )
 
+        # should be the same images for both players
+        self.log_resource(self.game_instance["player_1_first_image"])
+        self.log_resource(self.game_instance["player_1_second_image"])
+        self.log_resource(self.game_instance["player_1_third_image"])
+
     @classmethod
     def applies_to(cls, game_name: str) -> bool:
         return game_name == GAME_NAME

@@ -1,3 +1,4 @@
+import shutil
 from typing import Dict
 import os
 import json
@@ -82,6 +83,25 @@ def store_game_results_file(data, file_name: str, dialogue_pair: str, game_name:
                             do_overwrite: bool = True) -> str:
     game_results_dir = game_results_dir_for(root_dir, dialogue_pair, game_name)
     return store_file(data, file_name, game_results_dir, sub_dir, do_overwrite)
+
+
+def store_game_resource_file(resource_path: str, dialogue_pair: str, game_name: str,
+                             sub_dir: str = None, root_dir: str = None) -> str:
+    game_results_dir = game_results_dir_for(root_dir, dialogue_pair, game_name)
+    if sub_dir:
+        game_results_dir = os.path.join(game_results_dir, sub_dir)
+    file_name = os.path.basename(resource_path)
+    target_path = os.path.join(game_results_dir, file_name)
+    return copy_file(resource_path, target_path)
+
+
+def copy_file(src, tgt):
+    if not os.path.exists(src):
+        raise ValueError(f"File to copy does not exist at {src}")
+    tgt_dir = os.path.dirname(tgt)
+    if not os.path.exists(tgt_dir):
+        os.makedirs(tgt_dir)
+    return shutil.copy2(src, tgt)
 
 
 def store_game_file(data, file_name: str, game_name: str, sub_dir: str = None, do_overwrite: bool = True) -> str:
